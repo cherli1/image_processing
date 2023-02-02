@@ -1,0 +1,845 @@
+import doctest
+
+
+def is_valid_image(my_list):
+    ''' (list<list<int>>) -> bool
+    Takes in a nested list, returns True if the list represents
+    a non-compressed PGM image, meaning it contains only integers
+    between 0 and 255 and each nested list have the same length.
+    
+    >>> is_valid_image([[3, 4, 5], [1, 2, 8, 6]])
+    False
+    >>> is_valid_image([[1, 2, 3], [7, 8, 9], [12, 16, 20]])
+    True
+    >>> is_valid_image([[300, 10, 2], [4, 12, 4]])
+    False
+    
+    '''
+    
+    length = len(my_list[0])
+    for sublist in my_list:
+        if len(sublist) != length:
+            return False
+        else:
+            for number in sublist:
+                if type(number) != int:
+                    return False
+                elif number < 0 or number > 255: 
+                    return False
+
+    return True
+
+
+def valid_x_position(my_str):
+    ''' (str) -> bool
+    Takes in a string and checks it is in the form AxB, meaning
+    "x" isn't in the first or last position of the string.
+    
+    >>> valid_x_position("x12")
+    False
+    >>> valid_x_position("1x2")
+    True
+    >>> valid_x_position("12x")
+    False
+
+    '''
+    
+    for i in range(len(my_str)):
+        if my_str[0] == "x" or my_str[len(my_str) - 1] == "x":
+            return False
+    return True
+
+
+def valid_nums(int1, int2):
+    ''' (int, int) -> bool
+    Checks the two conditions of int1 being in between 0 and 255,
+    and int2 being a positive integer.
+    
+    >>> valid_nums(2, 75)
+    True
+    >>> valid_nums(255, 1)
+    True
+    >>> valid_nums(310, 5)
+    False
+    
+    '''
+    
+    return 0 <= int1 <= 255 and int2 > 0
+
+
+def valid_B_values(my_list):
+    ''' (list<list<str>>) -> bool
+    Takes in the nested list, returns True if the sum of the B values
+    are all equal.
+    
+    >>> valid_B_values([["12x5", "200x2"], ["111x7"]])
+    True
+    >>> valid_B_values([["12x7", "200x2"], ["111x7"]])
+    False
+    >>> valid_B_values([["12x2", "200x2", "50x7"], ["111x7", "1x4"]])
+    True
+    
+    '''
+    
+    all_summed_B = []
+    
+    for sublist in my_list:
+        sublist_B = 0
+        for element in sublist:
+            B_value = element[element.index("x") + 1:]
+            if B_value.count("x") > 0:
+                return False
+            B_value = int(B_value)
+            sublist_B += B_value
+        all_summed_B.append(sublist_B)
+    
+    
+    compared_B = all_summed_B[0]
+    for number in all_summed_B:
+        if number != compared_B:
+            return False
+    return True
+        
+
+def valid_characters(my_string):
+    ''' (str) -> bool
+    Takes in a string, tests if the string has valid characters,
+    meaning it has an x but not more than one per string. 
+    
+    >>> valid_characters("70x5")
+    True
+    >>> valid_characters("705")
+    False
+    >>> valid_characters("70xx5")
+    False
+    
+    '''
+        
+    if "x" not in my_string:
+        return False
+    
+    if my_string.count("x") > 1:
+        return False
+
+    return True
+
+
+def is_valid_compressed_image(my_list):
+    ''' (list<list<str>>) -> bool
+    Takes in a nested list, returns True if it represents
+    a compressed image, meaning only contains strings of the form
+    "AxB" where A is an integer between 0 and 255, and B is a
+    positive integer.
+    Also the sum of all B values each row is the same.
+    
+    >>> is_valid_compressed_image([["0ax5", "200x2"], ["111x7"]])
+    False
+    >>> is_valid_compressed_image([[3, 4, 5], [1, 2, 3]])
+    False
+    >>> is_valid_compressed_image([["2x3", "5x9"], ["10x12"]])
+    True
+    
+    '''
+
+    for sublist in my_list:
+        for element in sublist:
+            if type(element) != str:
+                return False
+            elif not valid_characters(element):
+                    return False
+            elif not valid_x_position(element):
+                return False
+            else:
+                for character in element:
+                    if character != "x" and not character.isdecimal():
+                        return False
+                if not valid_B_values(my_list):
+                    return False
+                
+                x_position = element.index("x")
+                first_int = int(element[:x_position]) # gives "A"
+                second_int = int(element[x_position + 1:]) # gives "B"
+                if not valid_nums(first_int, second_int):
+                    return False
+    return True
+
+
+def correct_dimensions(lines):
+    ''' (list<str>) -> bool
+    Takes in a list of the lines in the image, checks there are
+    2 dimension numbers and they match the image, raises
+    an AssertionError if false. 
+    
+    >>> lines = ["P2", "2 3 4", "255"]
+    >>> correct_dimensions(lines)
+    Traceback (most recent call last):
+    AssertionError: Please enter two dimensions.
+
+    >>> lines = ["P2", "2 2", "255", "0 0 0 0 0", "0 0 0 0 0"]
+    >>> correct_dimensions(lines)
+    Traceback (most recent call last):
+    AssertionError: Please enter correct width.
+    
+    >>> lines = ["P2", "5 3", "255", "0 0 0 0 0", "0 0 0 0 0"]
+    >>> correct_dimensions(lines)
+    Traceback (most recent call last):
+    AssertionError: Please enter correct height.
+    
+    '''
+    
+    dimensions = lines[1].split()
+    
+    if len(dimensions) != 2:
+        raise AssertionError("Please enter two dimensions.")
+    
+    width = int(dimensions[0])
+    for row in range(3, len(lines)):
+        pixels = lines[row].split()
+        if len(pixels) != width:
+            raise AssertionError("Please enter correct width.")
+
+    if len(lines) - 3 != int(dimensions[1]):
+        raise AssertionError("Please enter correct height.")
+    
+    return True
+
+    
+def load_regular_image(filename):
+    ''' (str) -> list<list<int>>
+    Takes in a filename of a PGM image file and returns as an
+    image matrix. If not in PGM format, raise an AssertionError.
+    
+    >>> load_regular_image("comp.pgm")
+    [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 51, 51, 51, 51, 51, 0, 119, 119, 119, 119, 119, 0, 187, 187, 187, 187, 187, 0, 255, 255, 255, 255, 0], [0, 51, 0, 0, 0, 0, 0, 119, 0, 0, 0, 119, 0, 187, 0, 187, 0, 187, 0, 255, 0, 0, 255, 0], [0, 51, 0, 0, 0, 0, 0, 119, 0, 0, 0, 119, 0, 187, 0, 187, 0, 187, 0, 255, 255, 255, 255, 0], [0, 51, 0, 0, 0, 0, 0, 119, 0, 0, 0, 119, 0, 187, 0, 187, 0, 187, 0, 255, 0, 0, 0, 0], [0, 51, 51, 51, 51, 51, 0, 119, 119, 119, 119, 119, 0, 187, 0, 187, 0, 187, 0, 255, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
+    
+    >>> fobj = open("testing.pgm", "w")
+    >>> fobj.write("P2\\n2 2\\n255\\n1 50\\n100 255")
+    23
+    >>> fobj.close()
+    >>> load_regular_image("testing.pgm")
+    [[1, 50], [100, 255]]
+    
+    >>> fobj = open("testing.pgm", "w")
+    >>> fobj.write("P2\\n2 2\\n225\\n1 50\\n100 255")
+    23
+    >>> fobj.close()
+    >>> load_regular_image("testing.pgm")
+    Traceback (most recent call last):
+    AssertionError: Please enter the right max white value.
+    
+    >>> fobj = open("testing.pgm", "w")
+    >>> fobj.write("P2A\\n2 2\\n255\\n1 50\\n100 255")
+    24
+    >>> fobj.close()
+    >>> load_regular_image("testing.pgm")
+    Traceback (most recent call last):
+    AssertionError: Please enter the right formatting.
+    
+    >>> fobj = open("testing.pgm", "w")
+    >>> fobj.write("P2\\n2 2\\n255\\n1 50\\n100")
+    19
+    >>> fobj.close()
+    >>> load_regular_image("testing.pgm")
+    Traceback (most recent call last):
+    AssertionError: Please enter correct width.
+    
+    '''
+
+    final_lists = []
+    
+    fobj = open(filename, "r")
+    file_content = fobj.read()
+    lines = file_content.strip().split("\n")
+    
+    if lines[0] != "P2":
+        raise AssertionError("Please enter the right formatting.")
+    elif lines[2] != "255":
+        raise AssertionError("Please enter the right max white value.")
+    
+    correct_dimensions(lines)
+    
+    for row in range(3, len(lines)):
+        pixels = lines[row].split()
+        list_without_strings = []
+        for number in pixels:
+            if not number.isdecimal():
+                raise AssertionError("Please enter all numbers for matrix.")
+            list_without_strings.append(int(number))
+        final_lists.append(list_without_strings)
+    return final_lists
+    
+    is_valid_image(final_lists)
+    
+    fobj.close()
+
+
+def correct_dimensions_compressed(lines):
+    ''' (list<str>) -> bool
+    Takes in a list of the lines in the compressed image, checks there are
+    2 dimension numbers and they match the image, raises
+    an AssertionError if false. 
+    
+    >>> lines = ["P2", "1 3 2", "255"]
+    >>> correct_dimensions_compressed(lines)
+    Traceback (most recent call last):
+    AssertionError: Please enter two dimensions.
+    
+    >>> lines = ["P2", "5 3", "255", "0x5", "0x5"]
+    >>> correct_dimensions_compressed(lines)
+    Traceback (most recent call last):
+    AssertionError: Please enter correct height.
+    
+    >>> lines = ["P2", "10 2", "255", "0x10", "0x5"]
+    >>> correct_dimensions_compressed(lines)
+    Traceback (most recent call last):
+    AssertionError: Please enter correct width.
+    
+    '''
+    
+    dimensions = lines[1].split()
+    
+    if len(dimensions) != 2:
+        raise AssertionError("Please enter two dimensions.")
+    
+    width = int(dimensions[0])
+    for row in range(3, len(lines)):
+        row_width = 0
+        pixels = lines[row].split()
+        for pixel_AxB_form in pixels:
+            x_position = pixel_AxB_form.index("x")
+            B_value = int(pixel_AxB_form[x_position + 1:])
+            row_width += B_value
+        if row_width != width:
+            raise AssertionError("Please enter correct width.")
+
+    if len(lines) - 3 != int(dimensions[1]):
+        raise AssertionError("Please enter correct height.")
+    
+    return True
+
+
+def load_compressed_image(filename):
+    ''' (str) -> list<list<str>>
+    Takes in a filename of a compressed PGM image file,
+    returns the compressed image matrix. If it's not in
+    compressed PGM format, returns an AssertionError.
+    
+    >>> load_compressed_image("comp.pgm.compressed")
+    [['0x24'], ['0x1', '51x5', '0x1', '119x5', '0x1', '187x5', '0x1', '255x4', '0x1'], ['0x1', '51x1', '0x5', '119x1', '0x3', '119x1', '0x1', '187x1', '0x1', '187x1', '0x1', '187x1', '0x1', '255x1', '0x2', '255x1', '0x1'], ['0x1', '51x1', '0x5', '119x1', '0x3', '119x1', '0x1', '187x1', '0x1', '187x1', '0x1', '187x1', '0x1', '255x4', '0x1'], ['0x1', '51x1', '0x5', '119x1', '0x3', '119x1', '0x1', '187x1', '0x1', '187x1', '0x1', '187x1', '0x1', '255x1', '0x4'], ['0x1', '51x5', '0x1', '119x5', '0x1', '187x1', '0x1', '187x1', '0x1', '187x1', '0x1', '255x1', '0x4'], ['0x24']]
+    
+    >>> fobj = open("invalid_compressed.pgm", "w")
+    >>> fobj.write("P2C\\n15 2\\n255\\n0x8 10x8\\n5x15")
+    26
+    >>> fobj.close()
+    >>> load_compressed_image("invalid_compressed.pgm")
+    Traceback (most recent call last):
+    AssertionError: Please enter correct width.
+    
+    >>> fobj = open("invalid_compressed.pgm", "w")
+    >>> fobj.write("P2C\\n15 2\\n255\\n0x7 10x8\\n5x15\\n2x15")
+    31
+    >>> fobj.close()
+    >>> load_compressed_image("invalid_compressed.pgm")
+    Traceback (most recent call last):
+    AssertionError: Please enter correct height.
+    
+    '''
+    
+    fobj = open(filename, "r")
+    file_content = fobj.read()
+    lines = file_content.strip().split("\n")
+    
+    if lines[0] != "P2C":
+        raise AssertionError("Please enter the right formatting.")
+    elif lines[2] != "255":
+        raise AssertionError("Please enter the right max white value.")
+    
+    for row in range(3, len(lines)):
+        pixels = lines[row].split()
+        for element in pixels:
+            if not valid_characters(element):
+                raise AssertionError("Please enter the right number of x's.")
+    
+    correct_dimensions_compressed(lines)
+    
+    final_lists = []
+    for row in range(3, len(lines)):
+        pixels = lines[row].split()
+        row_list = []
+        for pixel_AxB_form in pixels:
+            row_list.append(pixel_AxB_form)
+        final_lists.append(row_list)
+    return final_lists
+    
+    if not is_valid_compressed_image(final_lists):
+        raise AssertionError("Please enter a valid image matrix.")
+    
+    fobj.close()
+    
+
+def load_image(filename):
+    ''' (str) -> list<list>
+    Takes in a filename, checks whether it's a regular or compressed
+    PGM image, returns the corresponding image matrix.
+    
+    >>> load_image("comp.pgm")
+    [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 51, 51, 51, 51, 51, 0, 119, 119, 119, 119, 119, 0, 187, 187, 187, 187, 187, 0, 255, 255, 255, 255, 0], [0, 51, 0, 0, 0, 0, 0, 119, 0, 0, 0, 119, 0, 187, 0, 187, 0, 187, 0, 255, 0, 0, 255, 0], [0, 51, 0, 0, 0, 0, 0, 119, 0, 0, 0, 119, 0, 187, 0, 187, 0, 187, 0, 255, 255, 255, 255, 0], [0, 51, 0, 0, 0, 0, 0, 119, 0, 0, 0, 119, 0, 187, 0, 187, 0, 187, 0, 255, 0, 0, 0, 0], [0, 51, 51, 51, 51, 51, 0, 119, 119, 119, 119, 119, 0, 187, 0, 187, 0, 187, 0, 255, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
+    >>> load_image("comp.pgm.compressed")
+    [['0x24'], ['0x1', '51x5', '0x1', '119x5', '0x1', '187x5', '0x1', '255x4', '0x1'], ['0x1', '51x1', '0x5', '119x1', '0x3', '119x1', '0x1', '187x1', '0x1', '187x1', '0x1', '187x1', '0x1', '255x1', '0x2', '255x1', '0x1'], ['0x1', '51x1', '0x5', '119x1', '0x3', '119x1', '0x1', '187x1', '0x1', '187x1', '0x1', '187x1', '0x1', '255x4', '0x1'], ['0x1', '51x1', '0x5', '119x1', '0x3', '119x1', '0x1', '187x1', '0x1', '187x1', '0x1', '187x1', '0x1', '255x1', '0x4'], ['0x1', '51x5', '0x1', '119x5', '0x1', '187x1', '0x1', '187x1', '0x1', '187x1', '0x1', '255x1', '0x4'], ['0x24']]
+    
+    >>> fobj = open("invalid_format.pgm", "w")
+    >>> fobj.write("AP2C\\n15 2\\n255\\n0x8 10x8\\n5x15")
+    27
+    >>> fobj.close()
+    >>> load_image("invalid_format.pgm")
+    Traceback (most recent call last):
+    AssertionError: Please enter the correct image formatting.
+    
+    >>> fobj = open("testing.pgm", "w")
+    >>> fobj.write("P2\\n2 2\\n255\\n1 50\\n100 255")
+    23
+    >>> fobj.close()
+    >>> load_image("testing.pgm")
+    [[1, 50], [100, 255]]
+    
+    '''
+    
+    fobj = open(filename, "r")
+    file_content = fobj.read()
+    lines = file_content.strip().split("\n")
+    
+    if lines[0] == "P2":
+        return load_regular_image(filename)
+    elif lines[0] == "P2C":
+        return load_compressed_image(filename)
+    else:
+        raise AssertionError("Please enter the correct image formatting.")
+
+
+def save_regular_image(image, filename): 
+    ''' (list<list<int>>, str) -> NoneType
+    Takes in a nested list and a filename,
+    saves the nested list in the file in the PGM image format.
+    If not a valid image matrix, raises an AssertionError. 
+    
+    >>> save_regular_image([[0]*5, [50]*7, [0]*5], "test.pgm")
+    Traceback (most recent call last):
+    AssertionError: Please enter a valid image matrix.
+    
+    >>> save_regular_image([[0]*10, [255]*10, [0]*10], "test.pgm")
+    >>> fobj = open("test.pgm", 'r')
+    >>> fobj.read()
+    'P2\\n10 3\\n255\\n0 0 0 0 0 0 0 0 0 0\\n255 255 255 255 255 255 255 255 255 255\\n0 0 0 0 0 0 0 0 0 0\\n'
+    >>> fobj.close()
+    
+    >>> save_regular_image([[0]*3, [5]*3, [255]*3, [0]*3], "test.pgm")
+    >>> fobj = open("test.pgm", 'r')
+    >>> fobj.read()
+    'P2\\n3 4\\n255\\n0 0 0\\n5 5 5\\n255 255 255\\n0 0 0\\n'
+    >>> fobj.close()
+    
+    '''
+    
+    final_lists = []
+    
+    for row in image:
+        final_lists.append(row)
+
+    if not is_valid_image(final_lists):
+        raise AssertionError("Please enter a valid image matrix.")
+    
+    pixels = ""
+    for row in final_lists:
+        each_row = ""
+        for number in range(len(row)):
+            if number == len(row) - 1:
+                each_row = each_row + str(row[number])
+            else:
+                each_row = each_row + str(row[number]) + " "
+        pixels = pixels + each_row + "\n"
+        
+    width = str(len(final_lists[0]))
+    height = str(len(final_lists))
+    
+    final_string = "P2\n" + width + " " + height + "\n" + "255\n" + pixels
+    
+    fobj = open(filename, "w")
+    fobj.write(final_string)
+    fobj.close()
+
+
+def save_compressed_image(image, filename):
+    ''' (list<list<str>>, str) -> NoneType
+    Takes in a nested list and filename,
+    saves the nested list in the file in the compressed PGM file format.
+    If not a valid image matrix, raises an AssertionError. 
+    
+    >>> save_compressed_image([["0x6"], ["111x7"]], "test.pgm.compressed")
+    Traceback (most recent call last):
+    AssertionError: Please enter a valid image matrix.
+    
+    >>> save_compressed_image([["0x3"], ["111x3"]], "test.pgm.compressed")
+    >>> fobj = open("test.pgm.compressed", 'r')
+    >>> fobj.read()
+    'P2C\\n3 2\\n255\\n0x3\\n111x3\\n'
+    >>> fobj.close()
+    
+    >>> save_compressed_image([["0x5", "50x2"], ["25x7"]], "test.pgm.compressed")
+    >>> fobj = open("test.pgm.compressed", 'r')
+    >>> fobj.read()
+    'P2C\\n7 2\\n255\\n0x5 50x2\\n25x7\\n'
+    >>> fobj.close()
+    
+    '''
+    
+    if not is_valid_compressed_image(image):
+        raise AssertionError("Please enter a valid image matrix.")
+    
+    pixel_str = ""
+    for row in image:
+        row_string = ""
+        for pixel in range(len(row)):
+            if pixel == len(row) - 1:
+                row_string = row_string + row[pixel]
+            else:
+                row_string = row_string + row[pixel] + " "
+        pixel_str = pixel_str + row_string + "\n"
+
+    height = str(len(image))
+    width = 0
+    for pixel in image[0]:
+        x_position = pixel.index("x")
+        B_value = int(pixel[x_position + 1:])
+        width += B_value
+    width = str(width)
+
+    final_string ="P2C\n" + width + " " + height + "\n" + "255\n" + pixel_str
+
+    fobj = open(filename, "w")
+    fobj.write(final_string)
+    fobj.close()
+
+
+def save_image(image, filename):
+    ''' (list<list>, str) -> NoneType
+    Takes in a nested list and filename, checks whether it's a
+    PGM image matrix or a compressed PGM image matrix,
+    saves said image matrix in the file with the inputted filename.
+    Raises an AssertionError if neither.
+    
+    >>> save_image([["0x5", "200x2"], ["111x7"]], "test.pgm.compressed")
+    >>> fobj = open("test.pgm.compressed", 'r')
+    >>> fobj.read()
+    'P2C\\n7 2\\n255\\n0x5 200x2\\n111x7\\n'
+    >>> fobj.close()
+    
+    >>> save_image([["0x5", 5], ["100x10"]], "test.pgm.compressed")
+    Traceback (most recent call last):
+    AssertionError: Please enter all consistent types.
+    
+    >>> save_image([[3.5, 2.5], [1.5]], "test.pgm.compressed")
+    Traceback (most recent call last):
+    AssertionError: Please enter a valid image matrix.
+    
+    '''
+    
+    consistent_typing = type(image[0][0])
+    
+    for row in image:
+        for pixel in row:
+            if type(pixel) != consistent_typing:
+                raise AssertionError("Please enter all consistent types.")
+    
+    if consistent_typing == str:
+        save_compressed_image(image, filename)
+    elif consistent_typing == int:
+        save_regular_image(image, filename)
+    else:
+        raise AssertionError("Please enter a valid image matrix.")
+
+
+def invert(image):
+    ''' (list<list<int>>) -> list<list<int>>
+    Takes a PGM image and returns the image but inverted,
+    meaning each element is subtracted from 255.
+    Raises an AssertionError is not a valid PGM image matrix.
+    
+    >>> invert([[1, 2, 3], [4, 5, 6, 7]])
+    Traceback (most recent call last):
+    AssertionError: Please enter a valid image.
+
+    >>> invert([[50, 255, 0]])
+    [[205, 0, 255]]
+    
+    >>> image = [[0, 100, 150], [200, 200, 200], [255, 255, 255]]
+    >>> invert(image)
+    [[255, 155, 105], [55, 55, 55], [0, 0, 0]]
+    
+    '''
+    
+    if not is_valid_image(image):
+        raise AssertionError("Please enter a valid image.")
+    
+    inverted_img = []
+    
+    for row in image:
+        inverted_row = []
+        for pixel in row:
+            new_pixel = 255 - pixel
+            inverted_row.append(new_pixel)
+        inverted_img.append(inverted_row)
+        
+    return inverted_img
+
+
+def flip_horizontal(image):
+    ''' (list<list<int>>) -> list<list<int>>
+    Takes a PGM image matrix, returns said image flipped horizontally,
+    meaning reverse the elements of each row.
+    Raises an AssertionError if invalid image matrix.
+    
+    >>> flip_horizontal([[1], [2, 4]])
+    Traceback (most recent call last):
+    AssertionError: Please enter a valid image.
+
+    >>> flip_horizontal([[1, 2], [2, 4]])
+    [[2, 1], [4, 2]]
+    
+    >>> image = [[1, 2, 3, 4, 5], [0, 0, 5, 10, 10], [5, 5, 5, 5, 5]]
+    >>> flip_horizontal(image)
+    [[5, 4, 3, 2, 1], [10, 10, 5, 0, 0], [5, 5, 5, 5, 5]]
+    
+    '''
+    
+    if not is_valid_image(image):
+        raise AssertionError("Please enter a valid image.")
+    
+    flipped = []
+    
+    for row in image:
+        flipped_row = []
+        for i in range(len(row) - 1, -1, -1):
+            flipped_row.append(row[i])
+        flipped.append(flipped_row)
+        
+    return flipped
+
+
+def flip_vertical(image):
+    ''' (list<list<int>>) -> list<list<int>>
+    Takes in a PGM image matrix and returns the image flipped vertically,
+    meaning reversing the elements of each column.
+    Raises an AssertionError if invalid image matrix.
+    
+    >>> flip_vertical([[1, 2, 3], [3, 4]])
+    Traceback (most recent call last):
+    AssertionError: Please enter a valid image.
+
+    >>> image = [[1, 2, 3, 4, 5], [0, 0, 5, 10, 10], [5, 5, 5, 5, 5]]
+    >>> flip_vertical(image)
+    [[5, 5, 5, 5, 5], [0, 0, 5, 10, 10], [1, 2, 3, 4, 5]]
+    
+    >>> image = [[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12]]
+    >>> flip_vertical(image)
+    [[10, 11, 12], [7, 8, 9], [4, 5, 6], [1, 2, 3]]
+    
+    '''
+    
+    if not is_valid_image(image):
+        raise AssertionError("Please enter a valid image.")
+    
+    flipped = []
+    
+    difference = len(image) - 1
+    for row in range(len(image)):
+        flipped_row = []
+        for column in range(len(image[row])):
+            flipped_row.append(image[difference - row][column])
+        flipped.append(flipped_row)
+    
+    return flipped
+
+
+def crop(image, start_r, start_c, num_r, num_c):
+    ''' (list<list<int>>, int, int, int, int) -> list<list<int>>
+    Takes in a PGM image matrix, integers of starting row, starting column,
+    number of rows and number of columns of the cropped image.
+    Returns the image matrix with the pixels in said cropped image.
+    Raises an AssertionError if invalid image matrix. 
+    
+    >>> crop([[1, 2], [3, 4], [5]], 0, 0, 1, 1)
+    Traceback (most recent call last):
+    AssertionError: Please enter a valid image.
+    
+    >>> crop([[1, 2, 3], [4, 5, 6], [7, 8, 9]], 1, 1, 1, 1)
+    [[5]]
+    
+    >>> crop([[1], [2], [3], [4]], 0, 0, 4, 1)
+    [[1], [2], [3], [4]]
+    
+    '''
+    
+    if not is_valid_image(image):
+        raise AssertionError("Please enter a valid image.")
+    
+    cropped = []
+    for row in range(len(image)):
+        cropped_row = []
+        for column in range(len(image[row])):
+            if column == start_c:
+                for i in range(num_c):
+                    cropped_row.append(image[row][column])
+                    column += 1
+        cropped.append(cropped_row)
+    
+    final_cropped = []
+    for row in range(start_r, start_r + num_r):
+        final_cropped.append(cropped[row])
+    
+    return final_cropped
+                
+    
+def find_end_of_repetition(my_list, index, target):
+    ''' (list<int>, int, int) -> int
+    Takes in a list of integers, an index number, and a target number.
+    Starting from the index number, returns the index of the end of
+    the repeated consequence of the target number.
+    
+    >>> find_end_of_repetition([1, 1, 1, 2, 3, 4], 2, 1)
+    2
+    
+    >>> find_end_of_repetition([1, 2, 3, 4, 5, 5, 5], 4, 5)
+    6
+    
+    >>> find_end_of_repetition([1, 2, 3, 4, 5, 5, 6], 4, 5)
+    5
+    
+    '''
+
+    for number in range(index, len(my_list)):
+        if my_list[number] != target:
+            return number - 1
+        elif number + 1 == len(my_list):
+            return number
+
+
+def compress(image):
+    ''' (list<list<int>>) -> list<list<str>>
+    Takes in a PGM image matrix and returns it compressed.
+    Raises an AssertionError if invalid image matrix. 
+    
+    >>> compress([[1, 2], [10]])
+    Traceback (most recent call last):
+    AssertionError: Please enter a valid image.
+    
+    >>> compress([[0, 0, 1, 2, 2, 2, 6], [4, 1, 2, 2, 9, 0, 0]])
+    [['0x2', '1x1', '2x3', '6x1'], ['4x1', '1x1', '2x2', '9x1', '0x2']]
+    
+    >>> compress([[1, 2, 3], [1, 1, 1], [4, 4, 5]])
+    [['1x1', '2x1', '3x1'], ['1x3'], ['4x2', '5x1']]
+    
+    '''
+    
+    if not is_valid_image(image):
+        raise AssertionError("Please enter a valid image.")
+    
+    compressed = []
+    
+    for row in image:
+        compressed_row = []
+        col_counter = 0
+        while col_counter != len(row):
+            index = find_end_of_repetition(row, col_counter, row[col_counter])
+            num_rep = index - col_counter + 1
+            element = str(row[col_counter]) + "x" + str(num_rep)
+            compressed_row.append(element)
+            col_counter = index + 1
+        compressed.append(compressed_row)
+
+    return compressed
+
+
+def decompress(image):
+    ''' (list<list<str>>) -> list<list<int>>
+    Takes in a compressed PGM image matrix, decompresses
+    the elements and returns the image matrix.
+    Raises an AssertionError if invalid compressed image.
+    
+    >>> decompress([["11x5"], ["1x1", "5x3", "7x1"], ["255x3", "0x1"]])
+    Traceback (most recent call last):
+    AssertionError: Please enter a valid image.
+    
+    >>> decompress([["0x2", "7x3"], ["10x5"]])
+    [[0, 0, 7, 7, 7], [10, 10, 10, 10, 10]]
+    
+    >>> decompress([["5x1", "6x2"], ["4x2", "10x1"], ["1x3"]])
+    [[5, 6, 6], [4, 4, 10], [1, 1, 1]]
+    
+    '''
+    
+    if not is_valid_compressed_image(image):
+        raise AssertionError("Please enter a valid image.")
+    
+    final_list = []
+    for row in image:
+        row_list = []
+        for element in row:
+            x_position = element.index("x")
+            first_int = int(element[:x_position])
+            second_int = int(element[x_position + 1:])
+            for i in range(second_int):
+                row_list.append(first_int)
+        final_list.append(row_list)
+    return final_list
+    
+
+def process_command(inputs):
+    ''' (str) -> NoneType
+    Takes a string as input that describes different processing
+    commands, executes those commands.
+    Raises an AssertionError if invalid command.
+    
+    >>> process_command("LOAD<comp.pgm> INF SAVE<comp.pgm.compressed>")
+    Traceback (most recent call last):
+    AssertionError: Please enter valid commands.
+    
+    >>> process_command("LOAD<comp.pgm> CP SAVE<comp.pgm.compressed>")
+    >>> load_compressed_image("comp.pgm.compressed")
+    [['0x24'], ['0x1', '51x5', '0x1', '119x5', '0x1', '187x5', '0x1', '255x4', '0x1'], ['0x1', '51x1', '0x5', '119x1', '0x3', '119x1', '0x1', '187x1', '0x1', '187x1', '0x1', '187x1', '0x1', '255x1', '0x2', '255x1', '0x1'], ['0x1', '51x1', '0x5', '119x1', '0x3', '119x1', '0x1', '187x1', '0x1', '187x1', '0x1', '187x1', '0x1', '255x4', '0x1'], ['0x1', '51x1', '0x5', '119x1', '0x3', '119x1', '0x1', '187x1', '0x1', '187x1', '0x1', '187x1', '0x1', '255x1', '0x4'], ['0x1', '51x5', '0x1', '119x5', '0x1', '187x1', '0x1', '187x1', '0x1', '187x1', '0x1', '255x1', '0x4'], ['0x24']]
+    
+    >>> process_command("LOAD<comp.pgm> DC SAVE<comp.pgm>")
+    Traceback (most recent call last):
+    AssertionError: Please enter a valid image.
+    
+    '''
+    
+    command_list = inputs.split()
+    for command in command_list:
+        if "LOAD" in command:
+            filename = command[5:-1]
+            file_content = load_image(filename)
+        elif "SAVE" in command:
+            filename = command[5:-1]
+            save_image(file_content, filename)
+        elif command == "INV":
+            file_content = invert(file_content)
+        elif command == "FH":
+            file_content = flip_horizontal(file_content)
+        elif command == "FV":
+            file_content = flip_vertical(file_content)
+        elif "CR" in command:
+            row = command[3]
+            col = command[5]
+            num_rows = command[7]
+            num_cols = command[9]
+            file_content = crop(file_content, row, col, num_rows, num_cols)
+        elif command == "CP":
+            file_content = compress(file_content)
+        elif command == "DC":
+            file_content = decompress(file_content)
+        else:
+            raise AssertionError("Please enter valid commands.")
+
+
+if __name__ == "__main__":
+    doctest.testmod()
